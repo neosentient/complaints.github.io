@@ -48,8 +48,8 @@ const CONFIG = {
   },
   // Paste your deployed Apps Script Web App URL here, then set enabled: true
   sheets: {
-    enabled: false,
-    url: "YOUR_APPS_SCRIPT_WEB_APP_URL"
+    enabled: true,
+    url: "https://script.google.com/macros/s/AKfycbyZbvceqIqqfUVl5znYQ3SVTBGLuOLym77CNgt830Se3U3KC5yjT7Ty3PkB9YKB1GDmEg/exec"
   },
   storageKey: "complaintBox.entries.v1",
   sessionKey: "complaintBox.session.v1"
