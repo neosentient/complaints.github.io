@@ -39,11 +39,11 @@ const CONFIG = {
     marliInbox: "spiralbots@gmail.com"
   },
   emailjs: {
-    enabled: false, // flip to true once real EmailJS creds are filled in
-    publicKey: "YOUR_EMAILJS_PUBLIC_KEY",
-    serviceId: "YOUR_EMAILJS_SERVICE_ID",
-    templateToRaghav: "YOUR_TEMPLATE_ID_TO_RAGHAV",
-    templateToMarli: "YOUR_TEMPLATE_ID_TO_MARLI"
+    enabled: true,
+    publicKey: "JHpaXoMojt8BrKdQ5",
+    serviceId: "service_z1ju0fe",
+    templateToRaghav: "template_w83x5hd",
+    templateToMarli: "template_1tn48ru"
   },
   // Paste your deployed Apps Script Web App URL here, then set enabled: true
   sheets: {
