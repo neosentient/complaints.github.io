@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<title>Marli's Complaint Box</title>
+<meta name="description" content="A small, official-feeling place to file a complaint.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="page">
+
+  <header class="topbar">
+    <div>
+      <h1 class="wordmark">marli's complaint box<span class="dot">.</span></h1>
+      <div class="tagline">file it. seal it. feel slightly better.</div>
+    </div>
+    <nav class="top-links">
+      <a href="pareto/index.html">the ledger &rarr;</a>
+    </nav>
+  </header>
+
+  <!-- ============== LOCK SCREEN ============== -->
+  <section id="lockScreen" class="envelope-wrap">
+    <div class="envelope card">
+      <div class="seal">FCB</div>
+      <h2 style="font-size:30px; margin-bottom:6px;">this box is sealed</h2>
+      <p style="color:var(--ink-soft); font-size:14px; margin:0 0 20px;">
+        enter your password to unseal it. one box, two keyholders.
+      </p>
+      <form id="lockForm">
+        <div class="field" style="text-align:left;">
+          <label for="pw">password</label>
+          <input type="password" id="pw" name="pw" autocomplete="off" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">unseal box</button>
+        <div class="error-msg" id="lockError" role="alert"></div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ============== COMPLAINT FORM (shown after auth) ============== -->
+  <section id="formScreen" style="display:none;">
+
+    <div class="card">
+      <div class="controls-row" style="margin-bottom:14px;">
+        <span class="mono" id="greeting" style="font-size:14px; color:var(--ink-soft);"></span>
+        <button class="btn btn-ghost" id="logoutBtn" type="button">seal the box back up</button>
+      </div>
+
+      <h2 style="font-size:26px; margin-bottom:4px;">what's the trouble?</h2>
+      <p style="color:var(--ink-soft); font-size:14px; margin:0 0 22px;">
+        say what happened. it goes straight to the other party's inbox &mdash; and gets logged in the ledger.
+      </p>
+
+      <form id="complaintForm">
+        <div class="field">
+          <label>category</label>
+          <div class="category-group" id="categoryGroup">
+            <label class="cat-chip" data-cat="work">
+              <input type="radio" name="category" value="work" required> work
+            </label>
+            <label class="cat-chip" data-cat="life">
+              <input type="radio" name="category" value="life"> life
+            </label>
+            <label class="cat-chip" data-cat="other">
+              <input type="radio" name="category" value="other"> other
+            </label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="message">the complaint</label>
+          <textarea id="message" name="message" placeholder="be specific. the ledger doesn't judge, but it does count." required></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="submitBtn">file complaint</button>
+        <div class="error-msg" id="formError" role="alert"></div>
+      </form>
+    </div>
+
+    <!-- ============== CONFIRMATION TICKET ============== -->
+    <div class="card no-pin" id="ticketCard" style="display:none; margin-top:22px;">
+      <div class="filed-stamp" id="filedStamp" style="margin-bottom:14px;">FILED</div>
+      <div class="ticket">
+        <div class="ticket-main">
+          <div style="font-size:13px; color:var(--ink-soft); margin-bottom:6px;" class="mono" id="emailStatusLine"></div>
+          <p style="margin:0; font-size:15px;" id="ticketSummary"></p>
+        </div>
+        <div class="ticket-stub">
+          <span>ticket</span>
+          <span class="num" id="ticketNum"></span>
+        </div>
+      </div>
+      <button class="btn" id="fileAnotherBtn" type="button" style="margin-top:18px;">file another</button>
+    </div>
+
+  </section>
+
+  <footer class="page-footer">
+    two keyholders, one box &middot; <a href="pareto/index.html">view the ledger</a>
+  </footer>
+
+</div>
+
+<script src="app.js"></script>
+<script>
+(function () {
+  const lockScreen = document.getElementById("lockScreen");
+  const formScreen = document.getElementById("formScreen");
+  const lockForm = document.getElementById("lockForm");
+  const lockError = document.getElementById("lockError");
+  const pwInput = document.getElementById("pw");
+  const greeting = document.getElementById("greeting");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  const complaintForm = document.getElementById("complaintForm");
+  const formError = document.getElementById("formError");
+  const submitBtn = document.getElementById("submitBtn");
+  const categoryGroup = document.getElementById("categoryGroup");
+
+  const ticketCard = document.getElementById("ticketCard");
+  const ticketNum = document.getElementById("ticketNum");
+  const ticketSummary = document.getElementById("ticketSummary");
+  const emailStatusLine = document.getElementById("emailStatusLine");
+  const fileAnotherBtn = document.getElementById("fileAnotherBtn");
+
+  function showForm(user) {
+    lockScreen.style.display = "none";
+    formScreen.style.display = "block";
+    const name = user === "marli" ? "Marli" : "Raghav";
+    greeting.textContent = "unsealed by " + name;
+  }
+
+  function resetToLock() {
+    clearSession();
+    formScreen.style.display = "none";
+    ticketCard.style.display = "none";
+    complaintForm.style.display = "block";
+    complaintForm.reset();
+    categoryGroup.querySelectorAll(".cat-chip").forEach(c => c.classList.remove("active"));
+    lockScreen.style.display = "flex";
+    pwInput.value = "";
+    lockError.textContent = "";
+    pwInput.focus();
+  }
+
+  // restore session on load
+  const existing = getSession();
+  if (existing && existing.user) {
+    showForm(existing.user);
+  }
+
+  lockForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    const user = checkPassword(pwInput.value);
+    if (!user) {
+      lockError.textContent = "that's not it. try again.";
+      pwInput.value = "";
+      pwInput.focus();
+      return;
+    }
+    lockError.textContent = "";
+    setSession(user);
+    showForm(user);
+  });
+
+  logoutBtn.addEventListener("click", resetToLock);
+  fileAnotherBtn.addEventListener("click", function () {
+    ticketCard.style.display = "none";
+    complaintForm.style.display = "block";
+    complaintForm.reset();
+    categoryGroup.querySelectorAll(".cat-chip").forEach(c => c.classList.remove("active"));
+    formError.textContent = "";
+  });
+
+  categoryGroup.querySelectorAll(".cat-chip").forEach(chip => {
+    chip.addEventListener("click", function () {
+      categoryGroup.querySelectorAll(".cat-chip").forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+    });
+  });
+
+  complaintForm.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    formError.textContent = "";
+
+    const session = getSession();
+    if (!session) { resetToLock(); return; }
+
+    const category = (complaintForm.querySelector("input[name='category']:checked") || {}).value;
+    const message = document.getElementById("message").value.trim();
+
+    if (!category) { formError.textContent = "pick a category first."; return; }
+    if (!message) { formError.textContent = "say something — the box is listening."; return; }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "filing…";
+
+    const fromUser = session.user; // "marli" | "raghav"
+    const toAddress = fromUser === "marli" ? CONFIG.recipients.raghavInbox : CONFIG.recipients.marliInbox;
+    const submittedAt = new Date().toISOString();
+    const ticketId = nextTicketId();
+
+    const entry = {
+      id: ticketId,
+      user: fromUser,
+      category,
+      message,
+      submittedAt
+    };
+
+    let emailResult;
+    try {
+      emailResult = await sendComplaintEmail({ fromUser, toAddress, category, message, ticketId, submittedAt });
+    } catch (err) {
+      emailResult = { sent: false, simulated: true };
+    }
+
+    saveEntry(entry);
+
+    // show ticket
+    complaintForm.style.display = "none";
+    ticketCard.style.display = "block";
+    ticketNum.textContent = ticketId;
+    ticketSummary.textContent = "\u201c" + (message.length > 140 ? message.slice(0, 140) + "…" : message) + "\u201d filed under " + category + ".";
+    emailStatusLine.textContent = emailResult.sent
+      ? "sent to " + toAddress
+      : "logged locally (email simulated — connect EmailJS in app.js to send for real) → " + toAddress;
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = "file complaint";
+  });
+})();
+</script>
+</body>
+</html>

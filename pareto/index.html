@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<title>The Ledger — Marli's Complaint Box</title>
+<meta name="description" content="A pareto view of who complained about what, and when.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+<style>
+  .chart-svg { width: 100%; height: auto; display: block; }
+  .bar { fill: var(--folder); }
+  .bar.life { fill: var(--filed); }
+  .bar.other { fill: var(--violet); }
+  .bar.work { fill: var(--folder); }
+  .cum-line { fill: none; stroke: var(--stamp); stroke-width: 2.5; }
+  .cum-dot { fill: var(--stamp); }
+  .axis-text { font-family: 'JetBrains Mono', monospace; font-size: 11px; fill: var(--ink-soft); }
+  .bar-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; fill: var(--ink); }
+  .grid-line { stroke: rgba(43,43,43,0.12); stroke-width: 1; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="topbar">
+    <div>
+      <h1 class="wordmark" style="font-size:clamp(24px,5vw,36px);">the ledger<span class="dot">.</span></h1>
+      <div class="tagline">every complaint, pinned and counted.</div>
+    </div>
+    <nav class="top-links">
+      <a href="../index.html">&larr; back to the box</a>
+    </nav>
+  </header>
+
+  <div class="card">
+    <div class="controls-row">
+      <div class="toggle-group" id="userToggle">
+        <button data-user="all" class="active">everyone</button>
+        <button data-user="marli">marli</button>
+        <button data-user="raghav">raghav</button>
+      </div>
+      <div class="toggle-group" id="granToggle">
+        <button data-gran="day">day</button>
+        <button data-gran="week" class="active">week</button>
+        <button data-gran="month">month</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="content"></div>
+
+  <footer class="page-footer">
+    pareto: categories ranked by count, cumulative % traced in red &middot; <a href="../index.html">file a new complaint</a>
+  </footer>
+
+</div>
+
+<script src="../app.js"></script>
+<script>
+(function () {
+  const content = document.getElementById("content");
+  const userToggle = document.getElementById("userToggle");
+  const granToggle = document.getElementById("granToggle");
+
+  let activeUser = "all";
+  let activeGran = "week";
+
+  const CAT_COLOR = { work: "#E8B23D", life: "#5C7A5C", other: "#7B6CA8" };
+  const CAT_LABEL = { work: "work", life: "life", other: "other" };
+
+  function setupToggle(group, attr, onChange) {
+    group.querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        group.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        onChange(btn.getAttribute(attr));
+      });
+    });
+  }
+
+  setupToggle(userToggle, "data-user", (v) => { activeUser = v; render(); });
+  setupToggle(granToggle, "data-gran", (v) => { activeGran = v; render(); });
+
+  function filterEntries(entries) {
+    return activeUser === "all" ? entries : entries.filter(e => e.user === activeUser);
+  }
+
+  function groupByBucket(entries) {
+    const buckets = {};
+    entries.forEach(e => {
+      const key = bucketKey(e.submittedAt, activeGran);
+      if (!buckets[key]) buckets[key] = [];
+      buckets[key].push(e);
+    });
+    return buckets;
+  }
+
+  function paretoForBucket(entriesInBucket) {
+    const counts = { work: 0, life: 0, other: 0 };
+    entriesInBucket.forEach(e => { if (counts[e.category] !== undefined) counts[e.category]++; });
+    const total = entriesInBucket.length;
+    const rows = Object.keys(counts)
+      .map(cat => ({ cat, count: counts[cat] }))
+      .sort((a, b) => b.count - a.count);
+    let running = 0;
+    rows.forEach(r => {
+      running += r.count;
+      r.cumPct = total ? Math.round((running / total) * 100) : 0;
+    });
+    return { rows, total };
+  }
+
+  function renderParetoSVG(rows, total, byUserBreakdown) {
+    const W = 600, H = 280;
+    const padL = 40, padR = 40, padT = 20, padB = 50;
+    const chartW = W - padL - padR;
+    const chartH = H - padT - padB;
+    const maxCount = Math.max(1, ...rows.map(r => r.count));
+    const barW = chartW / rows.length * 0.55;
+    const gap = chartW / rows.length;
+
+    let bars = "";
+    let labels = "";
+    let cumPoints = [];
+
+    rows.forEach((r, i) => {
+      const x = padL + gap * i + (gap - barW) / 2;
+      const barH = (r.count / maxCount) * chartH;
+      const y = padT + chartH - barH;
+      bars += `<rect class="bar ${r.cat}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="2"></rect>`;
+      bars += `<text class="bar-label" x="${(x + barW / 2).toFixed(1)}" y="${(y - 8).toFixed(1)}" text-anchor="middle">${r.count}</text>`;
+      labels += `<text class="axis-text" x="${(x + barW / 2).toFixed(1)}" y="${H - padB + 18}" text-anchor="middle">${CAT_LABEL[r.cat]}</text>`;
+      const cx = padL + gap * i + gap / 2;
+      const cy = padT + chartH - (r.cumPct / 100) * chartH;
+      cumPoints.push([cx, cy]);
+    });
+
+    let cumPath = "";
+    if (cumPoints.length) {
+      cumPath = "M " + cumPoints.map(p => p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" L ");
+    }
+    let cumDots = cumPoints.map(p => `<circle class="cum-dot" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.5"></circle>`).join("");
+    let cumLabels = rows.map((r, i) => {
+      const p = cumPoints[i];
+      return `<text class="axis-text" x="${(p[0] + 6).toFixed(1)}" y="${(p[1] - 8).toFixed(1)}" fill="var(--stamp)">${r.cumPct}%</text>`;
+    }).join("");
+
+    let gridLines = "";
+    [0, 0.25, 0.5, 0.75, 1].forEach(f => {
+      const y = padT + chartH * (1 - f);
+      gridLines += `<line class="grid-line" x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}"></line>`;
+    });
+
+    const breakdownHtml = byUserBreakdown ? `
+      <div class="legend-row">
+        ${Object.keys(byUserBreakdown).map(u => `<span>${u}: <strong>${byUserBreakdown[u]}</strong></span>`).join("")}
+      </div>` : "";
+
+    return `
+      <svg class="chart-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pareto chart of complaint categories">
+        ${gridLines}
+        ${bars}
+        <path class="cum-line" d="${cumPath}"></path>
+        ${cumDots}
+        ${cumLabels}
+        ${labels}
+      </svg>
+      <div class="legend-row">
+        <span><span class="legend-dot" style="background:${CAT_COLOR.work}"></span>work</span>
+        <span><span class="legend-dot" style="background:${CAT_COLOR.life}"></span>life</span>
+        <span><span class="legend-dot" style="background:${CAT_COLOR.other}"></span>other</span>
+        <span><span class="legend-dot" style="background:var(--stamp)"></span>cumulative %</span>
+        <span style="margin-left:auto; color:var(--ink-soft);">total: ${total}</span>
+      </div>
+      ${breakdownHtml}
+    `;
+  }
+
+  function render() {
+    const all = loadEntries();
+    const filtered = filterEntries(all);
+
+    if (filtered.length === 0) {
+      content.innerHTML = `<div class="card empty-state">no complaints filed yet for this view.<br>the ledger is, for now, suspiciously quiet.</div>`;
+      return;
+    }
+
+    const buckets = groupByBucket(filtered);
+    const bucketKeys = Object.keys(buckets).sort().reverse(); // most recent first
+
+    let html = `<div class="corkboard" style="display:flex; flex-direction:column; gap:18px;">`;
+    bucketKeys.forEach(key => {
+      const entriesInBucket = buckets[key];
+      const { rows, total } = paretoForBucket(entriesInBucket);
+
+      let byUser = null;
+      if (activeUser === "all") {
+        byUser = {};
+        entriesInBucket.forEach(e => { byUser[e.user] = (byUser[e.user] || 0) + 1; });
+      }
+
+      html += `
+        <div class="pin-card">
+          <div class="pin-dot"></div>
+          <h3 style="font-size:20px; margin-bottom:10px;">${key}</h3>
+          ${renderParetoSVG(rows, total, byUser)}
+        </div>
+      `;
+    });
+    html += `</div>`;
+    content.innerHTML = html;
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
