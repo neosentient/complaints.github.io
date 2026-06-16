@@ -288,9 +288,7 @@ input:focus, textarea:focus, select:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Caveat', cursive;
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 30px;
   border: 2px solid var(--stamp-dark);
   box-shadow: 0 3px 0 var(--shadow);
   transform: rotate(-6deg);
