@@ -31,13 +31,12 @@
 
 const CONFIG = {
   passwords: {
-    marli: "marli-secret-123",   // <-- change me
-    raghav: "raghav-secret-456"  // <-- change me
+    marli: "mnzi",
+    raghav: "rnbw"
   },
   recipients: {
-    // filler addresses — replace with the real inboxes
-    raghavInbox: "raghav.filler@example.com",
-    marliInbox: "marli.filler@example.com"
+    raghavInbox: "raghav_naidu@hotmail.com",
+    marliInbox: "spiralbots@gmail.com"
   },
   emailjs: {
     enabled: false, // flip to true once real EmailJS creds are filled in
