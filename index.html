@@ -148,12 +148,6 @@
     pwInput.focus();
   }
 
-  // restore session on load
-  const existing = getSession();
-  if (existing && existing.user) {
-    showForm(existing.user);
-  }
-
   lockForm.addEventListener("submit", function (e) {
     e.preventDefault();
     const user = checkPassword(pwInput.value);
@@ -203,7 +197,7 @@
     const fromUser = session.user; // "marli" | "raghav"
     const toAddress = fromUser === "marli" ? CONFIG.recipients.raghavInbox : CONFIG.recipients.marliInbox;
     const submittedAt = new Date().toISOString();
-    const ticketId = nextTicketId();
+    const ticketId = await nextTicketId();
 
     const entry = {
       id: ticketId,

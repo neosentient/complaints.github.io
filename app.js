@@ -95,9 +95,19 @@ function saveEntry(entry) {
   return entries.length;
 }
 
-function nextTicketId() {
-  const n = loadEntries().length + 1;
-  return "#" + String(n).padStart(4, "0");
+async function nextTicketId() {
+  if (CONFIG.sheets.enabled && CONFIG.sheets.url) {
+    try {
+      const res = await fetch(CONFIG.sheets.url);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        return "#" + String(data.length + 1).padStart(4, "0");
+      }
+    } catch (err) {
+      console.warn("[Complaint Box] Could not fetch sheet count, falling back to localStorage:", err);
+    }
+  }
+  return "#" + String(loadEntries().length + 1).padStart(4, "0");
 }
 
 /* ---------- email sending ---------- */
