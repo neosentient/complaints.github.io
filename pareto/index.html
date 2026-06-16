@@ -214,7 +214,12 @@
     content.innerHTML = html;
   }
 
-  render();
+  loadEntriesFromSheets().then(remote => {
+    if (remote.length > 0) {
+      localStorage.setItem(CONFIG.storageKey, JSON.stringify(remote));
+    }
+    render();
+  });
 })();
 </script>
 </body>

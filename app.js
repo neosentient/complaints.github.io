@@ -46,6 +46,11 @@ const CONFIG = {
     templateToRaghav: "YOUR_TEMPLATE_ID_TO_RAGHAV",
     templateToMarli: "YOUR_TEMPLATE_ID_TO_MARLI"
   },
+  // Paste your deployed Apps Script Web App URL here, then set enabled: true
+  sheets: {
+    enabled: false,
+    url: "YOUR_APPS_SCRIPT_WEB_APP_URL"
+  },
   storageKey: "complaintBox.entries.v1",
   sessionKey: "complaintBox.session.v1"
 };
@@ -142,6 +147,42 @@ async function sendComplaintEmail({ fromUser, toAddress, category, message, tick
   } catch (err) {
     console.warn("[Marli's Complaint Box] EmailJS send failed, falling back to simulated:", err);
     return { sent: false, simulated: true };
+  }
+}
+
+/* ---------- Google Sheets sync ---------- */
+
+/**
+ * Posts a single entry to the Apps Script backend.
+ * Silently no-ops if sheets.enabled is false.
+ */
+async function syncToSheets(entry) {
+  if (!CONFIG.sheets.enabled || !CONFIG.sheets.url) return;
+  try {
+    await fetch(CONFIG.sheets.url, {
+      method: "POST",
+      body: JSON.stringify(entry)
+    });
+  } catch (err) {
+    console.warn("[Complaint Box] Sheets sync failed (offline?):", err);
+  }
+}
+
+/**
+ * Fetches all entries from the shared Google Sheet.
+ * Falls back to localStorage if sheets are disabled or unreachable.
+ * Returns a promise that always resolves to an array.
+ */
+async function loadEntriesFromSheets() {
+  if (!CONFIG.sheets.enabled || !CONFIG.sheets.url) return loadEntries();
+  try {
+    const res = await fetch(CONFIG.sheets.url);
+    const data = await res.json();
+    if (Array.isArray(data)) return data;
+    return loadEntries();
+  } catch (err) {
+    console.warn("[Complaint Box] Could not reach Sheets, using localStorage:", err);
+    return loadEntries();
   }
 }
 
