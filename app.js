@@ -145,7 +145,8 @@ async function sendComplaintEmail({ fromUser, toAddress, category, message, tick
     return { sent: true, simulated: false };
   } catch (err) {
     console.warn("[Marli's Complaint Box] EmailJS send failed, falling back to simulated:", err);
-    return { sent: false, simulated: true };
+    console.error("[Marli's Complaint Box] EmailJS error detail:", JSON.stringify(err));
+    return { sent: false, simulated: true, error: err };
   }
 }
 
