@@ -18,6 +18,7 @@
   .cum-dot { fill: var(--stamp); }
   .axis-text { font-family: 'JetBrains Mono', monospace; font-size: 11px; fill: var(--ink-soft); }
   .bar-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; fill: var(--ink); }
+  .pct-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500; fill: var(--stamp); }
   .grid-line { stroke: rgba(43,43,43,0.12); stroke-width: 1; }
 </style>
 </head>
@@ -115,7 +116,7 @@
 
   function renderParetoSVG(rows, total, byUserBreakdown) {
     const W = 600, H = 280;
-    const padL = 40, padR = 40, padT = 20, padB = 50;
+    const padL = 40, padR = 40, padT = 26, padB = 50;
     const chartW = W - padL - padR;
     const chartH = H - padT - padB;
     const maxCount = Math.max(1, ...rows.map(r => r.count));
@@ -145,7 +146,20 @@
     let cumDots = cumPoints.map(p => `<circle class="cum-dot" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.5"></circle>`).join("");
     let cumLabels = rows.map((r, i) => {
       const p = cumPoints[i];
-      return `<text class="axis-text" x="${(p[0] + 6).toFixed(1)}" y="${(p[1] - 8).toFixed(1)}" fill="var(--stamp)">${r.cumPct}%</text>`;
+      const txt = r.cumPct + "%";
+      const w = txt.length * 6.5 + 12;
+      const h = 17;
+      // above the dot by default; drop below when the dot is near the top
+      const below = (p[1] - 34) < padT;
+      const boxY = below ? p[1] + 9 : p[1] - h - 9;
+      // keep the pill inside the chart horizontally
+      let boxX = Math.max(2, Math.min(p[0] - w / 2, W - w - 2));
+      const textX = boxX + w / 2;
+      const textY = boxY + h / 2 + 4;
+      return `
+        <rect x="${boxX.toFixed(1)}" y="${boxY.toFixed(1)}" width="${w.toFixed(1)}" height="${h}" rx="8.5"
+              fill="var(--paper)" stroke="var(--stamp)" stroke-width="1"></rect>
+        <text class="pct-label" x="${textX.toFixed(1)}" y="${textY.toFixed(1)}" text-anchor="middle">${txt}</text>`;
     }).join("");
 
     let gridLines = "";
