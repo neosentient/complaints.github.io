@@ -36,7 +36,7 @@ const CONFIG = {
   },
   recipients: {
     raghavInbox: "raghav_naidu@hotmail.com",
-    marliInbox: "spiralbots@gmail.com"
+    marliInbox: "marlidelange@gmail.com"
   },
   emailjs: {
     enabled: true,
