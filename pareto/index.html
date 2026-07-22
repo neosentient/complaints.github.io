@@ -229,7 +229,11 @@
   }
 
   loadEntriesFromSheets().then(remote => {
-    if (remote.length > 0) {
+    if (CONFIG.sheets.enabled) {
+      // the sheet is the source of truth — mirror it exactly, even when empty,
+      // so cleared complaints don't linger from stale local cache
+      localStorage.setItem(CONFIG.storageKey, JSON.stringify(remote));
+    } else if (remote.length > 0) {
       localStorage.setItem(CONFIG.storageKey, JSON.stringify(remote));
     }
     render();
