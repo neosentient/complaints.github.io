@@ -45,8 +45,8 @@
       </div>
       <div class="toggle-group" id="granToggle">
         <button data-gran="day">day</button>
-        <button data-gran="week" class="active">week</button>
-        <button data-gran="month">month</button>
+        <button data-gran="week">week</button>
+        <button data-gran="month" class="active">month</button>
       </div>
     </div>
   </div>
@@ -67,7 +67,7 @@
   const granToggle = document.getElementById("granToggle");
 
   let activeUser = "all";
-  let activeGran = "week";
+  let activeGran = "month";
 
   const CAT_COLOR = { work: "#E8B23D", life: "#5C7A5C", other: "#7B6CA8" };
   const CAT_LABEL = { work: "work", life: "life", other: "other" };
